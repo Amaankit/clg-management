@@ -1,0 +1,257 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  password        String     @db.VarChar(128)
+  last_login      DateTime?  @db.Timestamptz(6)
+  created_at      DateTime   @db.Timestamptz(6) @default(now())
+  updated_at      DateTime   @db.Timestamptz(6)
+  uuid            String     @id @db.Uuid
+  username        String     @unique @db.VarChar(128)
+  email           String?    @unique @db.VarChar(128)
+  is_active       Boolean    @default(true)
+  phonenumber     String     @unique @db.VarChar(15)
+  usergroup       UserGroup   
+  fullname        String     @db.VarChar(50)
+  student         Student?
+  attendance_punch_by Attendance[]
+  fees            StudentFees[]
+  fees_ledger     FeesLedger[]
+  test_result_by  TestResult[]
+  @@index([email])
+  @@index([phonenumber])
+  @@index([username])
+  @@map("authentication_user")
+}
+
+enum UserGroup {
+  ADMIN
+  STUDENT
+  FACULTY
+  FINANCE
+}
+
+
+// Assuming your schema.prisma file
+
+model Subject {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  name        String
+  description String?   @db.VarChar(1000)
+  external_marks Int       @default(0)
+  internal_marks Int    @default(0)
+  internal_prac_marks Int    @default(0)
+  external_prac_marks Int    @default(0)
+  createdAt   DateTime  @db.Timestamptz(6) @default(now())
+  updatedAt   DateTime  @db.Timestamptz(6) @updatedAt
+  is_active   Boolean   @default(true)
+  attendance  Attendance[]
+  test        Test[]
+  
+  
+  // Define a many-to-many relationship with the Student model
+  batches    Batch[] @relation("SubjectBatches")
+  students    Student[] @relation("StudentSubjects")
+  @@index([code])
+  @@map("core_subjects")
+}
+
+
+model Batch{
+  id          Int       @id @default(autoincrement())
+  name        String    @unique 
+  is_active   Boolean   @default(true)
+  createdAt   DateTime  @db.Timestamptz(6) @default(now())
+  updatedAt   DateTime  @db.Timestamptz(6) @updatedAt
+  subjects    Subject[] @relation("SubjectBatches")
+  students    Student[]
+  tests       Test[]
+
+  @@index([name])
+  @@map("core_batches")
+}
+
+model Student {
+  id       Int      @id @default(autoincrement())
+  rollNo   String   @unique @db.VarChar(128)
+  user     User     @relation(fields: [userId], references: [uuid])
+  userId   String   @unique @db.Uuid
+  batch    Batch    @relation(fields: [batchId], references: [id])
+  batchId  Int
+  subjects Subject[] @relation("StudentSubjects")
+  attendances  Attendance[]
+  fees      StudentFees[]
+  status   String @db.VarChar(128)
+  wallet   Float?
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  updatedAt DateTime @db.Timestamptz(6) @updatedAt
+  fees_ledgers     FeesLedger[]
+  test_results TestResult[]
+  @@map("student_students")
+  @@index([userId])
+  @@index([batchId])
+}
+
+enum UserStatus {
+  Active
+  DeActive
+}
+
+model Fees {
+  id     Int        @id @default(autoincrement())
+  type   UserStatus @default(Active)
+  amount Float      @default(0)
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  updatedAt DateTime @db.Timestamptz(6) @updatedAt
+  studentFees  StudentFees[]
+  @@map("core_fees")
+  @@index([type])
+}
+
+
+model Attendance {
+  id          Int       @id @default(autoincrement())
+  date        DateTime  @db.Date
+  status      AttendanceStatus @default(Present)
+  student     Student   @relation(fields: [studentId], references: [id])
+  studentId   Int
+  subject     Subject   @relation(fields: [subjectId], references: [id])
+  subjectId   Int
+  punch_by    User      @relation(fields: [punchbyId], references: [uuid])
+  punchbyId   String   @db.Uuid
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  updatedAt DateTime @db.Timestamptz(6) @updatedAt
+
+  @@map("student_attendances")
+  @@index([studentId])
+  @@index([subjectId])
+  @@index([punchbyId])
+  @@unique([date, studentId, subjectId])
+  
+}
+
+enum AttendanceStatus {
+  Present
+  Absent
+  Late
+}
+
+
+model StudentFees{
+  id          Int       @id @default(autoincrement())
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  updatedAt DateTime @db.Timestamptz(6) @updatedAt
+  amount Float      @default(0)
+  added_by    User      @relation(fields: [addedbyId], references: [uuid])
+  addedbyId   String    @db.Uuid
+  student     Student   @relation(fields: [studentId], references: [id])
+  studentId   Int
+  fees        Fees      @relation(fields: [feesId], references: [id])
+  feesId      Int
+  @@map("student_studentfees")
+  @@index([addedbyId])
+  @@index([studentId])
+}
+
+model FeesLedger{
+  id          Int       @id @default(autoincrement())
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  updatedAt DateTime @db.Timestamptz(6) @updatedAt
+  amount Float      @default(0)
+  added_by    User      @relation(fields: [addedbyId], references: [uuid])
+  addedbyId   String    @db.Uuid
+  student     Student   @relation(fields: [studentId], references: [id])
+  studentId   Int
+  transactionId String? @db.VarChar(128)
+  paymentMode   PaymentMode
+  paymentType   paymentType
+  remarks       String  @db.VarChar(10000)
+  payementData  DateTime @db.Date
+
+  @@map("finance_feesledger")
+  @@index([addedbyId])
+  @@index([studentId])
+
+}
+
+enum PaymentMode{
+  Cash
+  Online
+  Cheque
+}
+
+enum paymentType{
+  Credit
+  Debit
+}
+
+model Test{
+  id          Int       @id @default(autoincrement())
+  testType    testType
+  testDate    DateTime  @db.Date
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  updatedAt DateTime @db.Timestamptz(6) @updatedAt
+  location String  @db.VarChar(1000)
+  maxMarks  Int   @default(100)
+  subject     Subject   @relation(fields: [subjectId], references: [id])
+  subjectId   Int
+  batch    Batch    @relation(fields: [batchId], references: [id])
+  batchId  Int
+  test_results  TestResult[]
+
+  @@map("core_test")
+  @@index([subjectId])
+  @@index([testDate])
+  @@index([batchId])
+  @@unique([testDate, subjectId,batchId])
+}
+
+enum testType{
+  CT
+  PUT
+  External_Practical
+  Internal_Practical
+  External
+}
+
+
+model TestResult{
+  id          Int       @id @default(autoincrement())
+
+  marks       Int       @default(0)
+  createdAt DateTime @db.Timestamptz(6) @default(now())
+  updatedAt DateTime @db.Timestamptz(6) @updatedAt
+  student     Student   @relation(fields: [studentId], references: [id])
+  studentId   Int
+  test     Test   @relation(fields: [testId], references: [id])
+  testId   Int
+  remarksType  remarksType
+  remarks       String  @db.VarChar(10000)
+  added_by    User      @relation(fields: [addedbyId], references: [uuid])
+  addedbyId   String    @db.Uuid
+
+  @@map("student_test_results")
+  @@index([studentId])
+  @@index([addedbyId])
+  @@index([testId])
+  @@unique([testId, studentId])
+
+
+}
+
+enum remarksType{
+  Pass
+  Fail
+  Grace
+}

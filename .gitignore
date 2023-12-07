@@ -1,0 +1,52 @@
+# Ignore node_modules directory
+node_modules/
+
+# Ignore output directories
+/dist/
+/.next/
+/.nuxt/
+/.out/
+/out-tsc/
+
+# Ignore environment variables file
+.env
+
+# Ignore TypeScript configuration file
+tsconfig*.json
+
+# Ignore NestJS debug log
+debug.log
+
+# Ignore VSCode directory
+.vscode/
+
+# Ignore IntelliJ IDEA directories
+.idea/
+*.iml
+
+# Ignore logs
+logs/
+*.log*
+npm-debug.log*
+
+# Ignore yarn files
+yarn-error.log
+yarn.lock
+
+# Ignore coverage directory
+coverage/
+
+# Ignore local development configuration
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignore test coverage output
+coverage/
+
+# Ignore .DS_Store files on macOS
+.DS_Store
+
+# Ignore .env.local file
+.env.local

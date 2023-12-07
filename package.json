@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@elastic/elasticsearch": "^8.10.0",
+    "@nestjs/elasticsearch": "^10.0.1",
+    "@prisma/client": "^5.6.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "prisma": "^5.6.0"
+  }
+}
